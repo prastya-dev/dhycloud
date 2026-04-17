@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String?
+  googleId      String?  @unique
+  isVerified    Boolean  @default(false)
+  subdomain     String?  @unique
+  createdAt     DateTime @default(now())
+
+  storage       StorageLimit?
+  folders       Folder[]
+  files         File[]
+  deployments   Deployment[]
+  logs          ActivityLog[]
+}
+
+model StorageLimit {
+  id           String @id @default(uuid())
+  userId       String @unique
+  maxStorage   BigInt @default(104857600)
+  usedStorage  BigInt @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent Folder? @relation("FolderToFolder", fields: [parentId], references: [id])
+  children Folder[] @relation("FolderToFolder")
+  files  File[]
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String
+  path      String
+  size      BigInt
+  mimeType  String?
+  userId    String
+  folderId  String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+}
+
+model Deployment {
+  id         String   @id @default(uuid())
+  userId     String
+  status     String   @default("active")
+  deployedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
