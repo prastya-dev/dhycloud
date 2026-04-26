@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 
 export default function Home() {
   const router = useRouter()
-  redirect('/login')
+  redirect('/pages/login')
 
   return <h1>Redirecting...</h1>
 }

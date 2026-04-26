@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "feather-icons": "^4.29.2",
+    "react-feather": "^2.0.10"
+  }
+}
