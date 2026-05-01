@@ -35,9 +35,13 @@ export default function LoginPage() {
   return (
     <>
       <Head><title>Login — DhyCloud</title></Head>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-between p-6">
+        <div>
+         
+        </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-sm w-full">
-
+               
+         
           <h1 className="text-xl font-semibold text-gray-900 mb-1">Masuk</h1>
           <p className="text-sm text-gray-400 mb-6">Selamat datang kembali</p>
 
@@ -85,15 +89,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="flex items-center gap-3 my-5">
+          {/* <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-gray-100" />
             <span className="text-xs text-gray-400">atau</span>
             <div className="flex-1 h-px bg-gray-100" />
           </div>
 
           <button
+          disabled
             onClick={() => signIn('google', { callbackUrl: '/boards' })}
-            className="w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-50 transition"
+            className="cursor-not-allowed w-full border border-gray-200 rounded-xl py-2.5 text-sm font-medium text-gray-700 flex items-center justify-center gap-2 hover:bg-gray-50 transition"
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -102,7 +107,7 @@ export default function LoginPage() {
               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
             </svg>
             Masuk dengan Google
-          </button>
+          </button> */}
 
           <p className="text-center text-sm text-gray-400 mt-6">
             Belum punya akun?{' '}
@@ -111,6 +116,9 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+        <p className="text-xs text-gray-300 text-center mt-6 tracking-wide">
+  © prastya-dev
+</p>
       </div>
     </>
   )

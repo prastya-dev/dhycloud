@@ -1,9 +1,0 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Carter+One&display=swap');
-
-
-
-@import "tailwindcss";
-@theme{
-  --font-ass : "Carter One", system-ui;
-}

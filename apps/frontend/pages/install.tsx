@@ -6,30 +6,34 @@ type InstallState = 'checking' | 'already-installed' | 'can-install' | 'manual'
 
 export default function InstallPage() {
   const router = useRouter()
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null)
   const [installState, setInstallState] = useState<InstallState>('checking')
   const [isInstalling, setIsInstalling] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => {
-    // cek apakah sudah jalan sebagai PWA (standalone)
+    const ua = navigator.userAgent
+    const mobile = /android|iphone|ipad|ipod|mobile/i.test(ua)
+    const ios = /iphone|ipad|ipod/i.test(ua)
+    setIsMobile(mobile)
+    setIsIOS(ios)
+
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
+      (window.navigator as { standalone?: boolean }).standalone === true
 
     if (isStandalone) {
-      // sudah install dan dibuka dari icon → redirect langsung
       router.replace('/')
       return
     }
 
-    // cek apakah pernah di-install sebelumnya (flag di localStorage)
     const wasInstalled = localStorage.getItem('pwa-installed') === 'true'
     if (wasInstalled) {
       setInstallState('already-installed')
       return
     }
 
-    // tangkap event install dari browser
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e)
@@ -38,30 +42,27 @@ export default function InstallPage() {
 
     window.addEventListener('beforeinstallprompt', handler)
 
-    // kalau sudah berhasil install
     window.addEventListener('appinstalled', () => {
       localStorage.setItem('pwa-installed', 'true')
       setInstallState('already-installed')
     })
 
-    // 3 detik tidak ada prompt → tampilkan panduan manual
     const timer = setTimeout(() => {
-      setInstallState((prev) =>
-        prev === 'checking' ? 'manual' : prev
-      )
+      setInstallState((prev) => (prev === 'checking' ? 'manual' : prev))
     }, 3000)
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler)
       clearTimeout(timer)
     }
-  }, [])
+  }, [router])
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
     setIsInstalling(true)
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
+    const prompt = deferredPrompt as { prompt: () => void; userChoice: Promise<{ outcome: string }> }
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
     if (outcome === 'accepted') {
       localStorage.setItem('pwa-installed', 'true')
       setInstallState('already-installed')
@@ -70,14 +71,6 @@ export default function InstallPage() {
     setIsInstalling(false)
   }
 
-  const handleOpenApp = () => {
-    // kalau sudah login → ke boards, belum login → ke login
-    router.push('/login')
-  }
-
-  const isIOS = typeof navigator !== 'undefined' &&
-    /iphone|ipad|ipod/i.test(navigator.userAgent)
-
   return (
     <>
       <Head><title>Install DhyCloud</title></Head>
@@ -85,90 +78,108 @@ export default function InstallPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-sm w-full text-center">
 
           {/* Icon */}
-        {/* Icon */}
-<div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-6">
-  <img
-    src="/icons/icon-512x512.png"
-    alt="DhyCloud"
-    className="w-full h-full object-cover"
-  />
-</div>
+          <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-6">
+            <img
+              src="/icons/icon-512x512.png"
+              alt="DhyCloud"
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-          {/* <h1 className="text-xl font-semibold text-gray-900 mb-2">DhyCloud</h1> */}
           <p className="text-sm text-gray-500 mb-8 leading-relaxed">
             Project management app — kelola task, deadline, dan tim kamu.
           </p>
 
-          {/* === SUDAH INSTALL === */}
-          {installState === 'already-installed' && (
-            <div className="space-y-3">
-              <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 font-medium">
-                ✅ Aplikasi sudah terinstall
-              </div>
-              <button
-                onClick={handleOpenApp}
-                className="w-full bg-blue-700 text-white rounded-xl py-3 text-sm font-semibold hover:bg-blue-800 active:bg-blue-900 transition"
-              >
-                Buka aplikasi →
-              </button>
-            </div>
-          )}
+         {/* === SUDAH INSTALL === */}
+{installState === 'already-installed' && (
+  <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 font-medium text-center space-y-1">
+    <p>✅ Aplikasi sudah terinstall</p>
+    <p className="font-normal text-green-600">
+      Buka dari home screen, lalu refresh halaman ini.
+    </p>
+  </div>
+)}
 
           {/* === BISA INSTALL (Chrome/Edge/Android) === */}
           {installState === 'can-install' && (
-            <div className="space-y-3">
-              <button
-                onClick={handleInstall}
-                disabled={isInstalling}
-                className="w-full bg-blue-700 text-white rounded-xl py-3 text-sm font-semibold hover:bg-blue-800 active:bg-blue-900 transition disabled:opacity-60"
-              >
-                {isInstalling ? 'Menginstall...' : 'Install sekarang'}
-              </button>
-              <button
-                onClick={() => router.push('/login')}
-                className="w-full text-gray-400 text-sm hover:text-gray-600 transition py-1"
-              >
-                Lanjut tanpa install →
-              </button>
-            </div>
+            <button
+              onClick={handleInstall}
+              disabled={isInstalling}
+              className="w-full bg-blue-700 text-white rounded-xl py-3 text-sm font-semibold hover:bg-blue-800 active:bg-blue-900 transition disabled:opacity-60"
+            >
+              {isInstalling ? 'Menginstall...' : 'Install sekarang'}
+            </button>
           )}
 
-          {/* === PANDUAN MANUAL (iOS / Firefox) === */}
+          {/* === PANDUAN MANUAL === */}
           {installState === 'manual' && (
-            <div className="space-y-4">
-              <div className="bg-blue-50 rounded-xl p-4 text-left">
-                <p className="text-sm font-medium text-blue-800 mb-3">
-                  Cara install:
-                </p>
-                {isIOS ? (
+            <div className="bg-blue-50 rounded-xl p-4 text-left">
+              <p className="text-sm font-medium text-blue-800 mb-3">
+                Cara install:
+              </p>
+
+              {/* iOS (Safari) */}
+              {isIOS && (
+                <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside leading-relaxed">
+                  <li>Tap tombol <strong>Share</strong> di Safari</li>
+                  <li>Pilih <strong>&quot;Add to Home Screen&quot;</strong></li>
+                  <li>Tap <strong>&quot;Add&quot;</strong></li>
+                </ol>
+              )}
+
+              {/* Android / Mobile non-iOS */}
+              {!isIOS && isMobile && (
+                <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside leading-relaxed">
+                  <li>Tap ikon <strong>⋮</strong> di pojok kanan browser</li>
+                  <li>Pilih <strong>&quot;Install App&quot;</strong> atau <strong>&quot;Add to Home Screen&quot;</strong></li>
+                  <li>Tap <strong>&quot;Install&quot;</strong></li>
+                </ol>
+              )}
+
+              {/* Desktop (Chrome / Edge) */}
+              {!isMobile && (
+                <div className="space-y-3">
                   <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside leading-relaxed">
-                    <li>Tap tombol <strong>Share</strong> di Safari</li>
-                    <li>Pilih <strong>"Add to Home Screen"</strong></li>
-                    <li>Tap <strong>"Add"</strong></li>
+                    <li>
+                      Lihat pojok kanan atas browser, klik ikon{' '}
+                      <strong>Install</strong>{' '}
+                      <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-100 rounded text-blue-700 text-xs font-bold">↓</span>
+                    </li>
+                    <li>Klik <strong>&quot;Install&quot;</strong> pada dialog yang muncul</li>
                   </ol>
-                ) : (
-                  <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside leading-relaxed">
-                    <li>Klik ikon <strong>⋮</strong> di pojok kanan browser</li>
-                    <li>Pilih <strong>"Install App"</strong></li>
-                    <li>Klik <strong>"Install"</strong></li>
-                  </ol>
-                )}
-              </div>
-              <button
-                onClick={() => router.push('/login')}
-                className="w-full text-gray-400 text-sm hover:text-gray-600 transition py-1"
-              >
-                Lanjut tanpa install →
-              </button>
+
+                  {/* Visual hint untuk desktop */}
+                  <div className="mt-3 border border-blue-200 rounded-lg overflow-hidden">
+                    <div className="bg-blue-100 px-3 py-2 flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                      </div>
+                      <div className="flex-1 bg-white rounded px-2 py-0.5 text-xs text-gray-400 truncate">
+                        dhycloud.app
+                      </div>
+                      {/* Tombol install di pojok kanan */}
+                      <div className="flex items-center gap-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded font-medium">
+                        <span>↓</span>
+                        <span>Install</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600 text-center py-2 bg-white">
+                      Klik tombol di pojok kanan address bar ↑
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* === CHECKING (loading awal) === */}
+          {/* === CHECKING === */}
           {installState === 'checking' && (
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
               Menyiapkan...
             </div>

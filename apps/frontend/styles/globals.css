@@ -13,3 +13,24 @@ html, body {
   background: #f8fafc;
   color: #1a1a1a;
 }
+/* globals.css */
+*:not(input):not(textarea):not([contenteditable]) {
+  caret-color: transparent;
+  cursor: default;
+}
+
+
+.input-cream {
+  background: #F5F0E8;
+  border: 1px solid #D4C9B5;
+  color: #1B2A4A;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input-cream::placeholder { color: #B5A99A; }
+.input-cream:focus {
+  outline: none;
+  border-color: #1B2A4A;
+  box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.1);
+}
+.input-cream.match  { border-color: #7AAA8A; }
+.input-cream.mismatch { border-color: #C08080; }

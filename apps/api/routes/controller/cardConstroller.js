@@ -21,37 +21,26 @@ const checkCardAccess = async (cardId, userId) => {
 
   return card
 }
-
-// POST /api/cards — buat card baru di sebuah list
 const createCard = async (req, res) => {
   try {
-    const { title, listId } = req.body
+    const { title, listId, description, dueDate } = req.body  // ✅ tambah ini
 
     if (!title || !listId) {
       return res.status(400).json({ message: 'Title dan listId wajib diisi' })
     }
 
-    // cek list ada dan user punya akses ke board-nya
     const list = await prisma.list.findUnique({
       where: { id: listId },
-      include: {
-        board: { include: { members: true } }
-      }
+      include: { board: { include: { members: true } } }
     })
 
-    if (!list) {
-      return res.status(404).json({ message: 'List tidak ditemukan' })
-    }
+    if (!list) return res.status(404).json({ message: 'List tidak ditemukan' })
 
     const board = list.board
     const isOwner = board.ownerId === req.user.id
     const isMember = board.members.some(m => m.userId === req.user.id)
+    if (!isOwner && !isMember) return res.status(403).json({ message: 'Akses ditolak' })
 
-    if (!isOwner && !isMember) {
-      return res.status(403).json({ message: 'Akses ditolak' })
-    }
-
-    // posisi otomatis di akhir list
     const lastCard = await prisma.card.findFirst({
       where: { listId },
       orderBy: { position: 'desc' }
@@ -62,8 +51,11 @@ const createCard = async (req, res) => {
       data: {
         title: title.trim(),
         listId,
-        position
-      }
+        position,
+        description: description?.trim() || null,                        // ✅ tambah
+        dueDate: dueDate ? new Date(dueDate) : null                      // ✅ tambah
+      },
+      include: { links: true }                                           // ✅ tambah
     })
 
     res.status(201).json({ data: card })

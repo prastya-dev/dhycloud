@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: my_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: dhycloudservers
+      POSTGRES_PASSWORD: dhycloudsapiayam
+      POSTGRES_DB: dhycloud
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./api
+    container_name: my_api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: postgres
+      DB_USER: dhycloudservers
+      DB_PASSWORD: dhycloudsapiayam
+      DB_NAME: mydb
+    depends_on:
+      - postgres
+
+  frontend:
+    build: ./frontend
+    container_name: my_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:5000
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

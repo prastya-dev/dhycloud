@@ -4,7 +4,7 @@ export interface User {
   email: string
   isAdmin: boolean
 }
-
+// types/index.ts
 export interface Board {
   id: string
   title: string
@@ -13,6 +13,9 @@ export interface Board {
   lists: List[]
   members: BoardMember[]
   _count?: { lists: number; members: number }
+  isTemplate: boolean   // ✅ tambah
+  templateId: string | null  // ✅ tambah
+  templateToken: string | null  // ✅ tambah
   createdAt: string
   updatedAt: string
 }

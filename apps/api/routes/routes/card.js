@@ -8,7 +8,7 @@ const {
   deleteCard,
   addLink,
   deleteLink
-} = require('../controllers/cardController')
+} = require('../controller/cardConstroller');
 
 router.use(authenticate)
 

@@ -9,7 +9,7 @@ const card = require('./routes/card');
 
 router.use('/auth',authRouter);
 router.use('/boards',board);
-router.use('/list',list);
-router.use('/card',card);
+router.use('/lists',list);
+router.use('/cards',card);
 
 module.exports = router
