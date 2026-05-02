@@ -8,15 +8,18 @@ interface Props {
   onCardClick: (card: Card) => void
   onAddCard: (listId: string, title: string) => void
   onDeleteCard: (cardId: string, listId: string) => void
+  overId?: string | null   // 🔥 tambah
 }
 
-export default function Column({ list, onCardClick, onAddCard, onDeleteCard }: Props) {
+export default function Column({ list, onCardClick, onAddCard, onDeleteCard, overId }: Props) {
   const [showInput, setShowInput] = useState(false)
   const [title, setTitle] = useState('')
   const [adding, setAdding] = useState(false)
 
   const { setNodeRef, isOver } = useDroppable({ id: list.id })
-
+const isOverList =
+  overId === list.id ||
+  list.cards.some(card => card.id === overId)
   const handleAdd = async () => {
     if (!title.trim()) return
     setAdding(true)
@@ -38,9 +41,12 @@ export default function Column({ list, onCardClick, onAddCard, onDeleteCard }: P
   return (
     <div
       ref={setNodeRef}
-      className={`w-72 bg-gray-100 rounded-2xl p-3 flex flex-col gap-2 transition ${
-        isOver ? 'bg-blue-50 ring-2 ring-blue-200' : ''
-      }`}
+      className={`w-72 rounded-2xl p-3 flex flex-col gap-2 transition
+  ${isOverList
+    ? 'bg-blue-50 ring-2 ring-blue-300 shadow-md'
+    : 'bg-gray-100'
+  }
+`}
     >
       {/* Header kolom */}
       <div className="flex items-center justify-between px-1 py-1">
@@ -60,6 +66,7 @@ export default function Column({ list, onCardClick, onAddCard, onDeleteCard }: P
             card={card}
             onClick={() => onCardClick(card)}
             onDelete={() => onDeleteCard(card.id, list.id)}
+              isOver={overId === card.id}
           />
         ))}
       </div>

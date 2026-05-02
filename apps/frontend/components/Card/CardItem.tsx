@@ -7,9 +7,10 @@ interface Props {
   onClick: () => void
   onDelete: () => void
   isDragging?: boolean
+    isOver?: boolean   // 🔥 tambah
 }
 
-export default function CardItem({ card, onClick, onDelete, isDragging = false }: Props) {
+export default function CardItem({ card, onClick, onDelete, isDragging = false, isOver = false }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSortableDragging } =
     useSortable({ id: card.id })
 
@@ -39,7 +40,8 @@ export default function CardItem({ card, onClick, onDelete, isDragging = false }
       {...listeners}
       className={`bg-white rounded-xl border border-gray-100 p-3 shadow-sm group cursor-grab active:cursor-grabbing hover:shadow-md transition ${
         isDragging ? 'shadow-lg rotate-1' : ''
-      }`}
+      }
+      `}
     >
       <div className="flex items-start gap-2">
 

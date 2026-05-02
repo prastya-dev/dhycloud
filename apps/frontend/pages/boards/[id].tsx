@@ -427,14 +427,16 @@ import Head from 'next/head'
 import Link from 'next/link'
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
   DragOverlay,
   DragStartEvent,
   DragEndEvent,
   PointerSensor,
   TouchSensor,
   useSensor,
-  useSensors
+  useSensors,
+  closestCorners,
+  DragOverEvent
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -458,6 +460,7 @@ export default function BoardDetailPage() {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null)
   const [error, setError] = useState('')
 
+  const [overId, setOverId] = useState<string | null>(null)
   // Edit nama board
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleInput, setTitleInput] = useState('')
@@ -581,37 +584,84 @@ export default function BoardDetailPage() {
     setActiveCard(card)
   }
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveCard(null)
-    const { active, over } = event
-    if (!over || !board) return
+const handleDragOver = (event: DragOverEvent) => {
+  const { over } = event
+  setOverId(over ? String(over.id) : null)
+}
 
-    const cardId = active.id as string
-    const toListId = over.id as string
-    const fromListId = findListByCardId(cardId)
+const handleDragEnd = async (event: DragEndEvent) => {
+  setActiveCard(null)
+    setOverId(null) 
 
-    if (!fromListId || fromListId === toListId) return
+  const { active, over } = event
+  if (!over || !board) return
 
-    setBoard(prev => {
-      if (!prev) return prev
-      const card = findCardById(cardId)
-      if (!card) return prev
-      return {
-        ...prev,
-        lists: prev.lists.map(list => {
-          if (list.id === fromListId) return { ...list, cards: list.cards.filter(c => c.id !== cardId) }
-          if (list.id === toListId) return { ...list, cards: [...list.cards, { ...card, listId: toListId }] }
-          return list
-        })
+  const cardId = active.id as string
+  const overId = over.id as string
+
+  const fromListId = findListByCardId(cardId)
+  if (!fromListId) return
+
+  const movedCard = findCardById(cardId)
+  if (!movedCard) return
+
+  let toListId = ''
+  let newIndex = 0
+
+  // 🔥 CEK: drop di card atau list
+  const isOverCard = !!findCardById(overId)
+
+  if (isOverCard) {
+    const overCard = findCardById(overId)!
+    toListId = overCard.listId
+
+    const list = board.lists.find(l => l.id === toListId)!
+    newIndex = list.cards.findIndex(c => c.id === overId)
+  } else {
+    // drop di area kosong list
+    toListId = overId
+    const list = board.lists.find(l => l.id === toListId)!
+    newIndex = list.cards.length
+  }
+
+  // ❌ kalau posisi sama, skip
+  if (fromListId === toListId && newIndex === -1) return
+
+  // ✅ OPTIMISTIC UPDATE
+  setBoard(prev => {
+    if (!prev) return prev
+
+    let newLists = prev.lists.map(list => {
+      if (list.id === fromListId) {
+        return {
+          ...list,
+          cards: list.cards.filter(c => c.id !== cardId)
+        }
       }
+      return list
     })
 
-    try {
-      await api.put(`/cards/${cardId}`, { listId: toListId })
-    } catch {
-      fetchBoard()
-    }
+    newLists = newLists.map(list => {
+      if (list.id === toListId) {
+        const newCards = [...list.cards]
+        newCards.splice(newIndex, 0, { ...movedCard, listId: toListId })
+        return { ...list, cards: newCards }
+      }
+      return list
+    })
+
+    return { ...prev, lists: newLists }
+  })
+
+  try {
+    await api.put(`/cards/${cardId}`, {
+      listId: toListId,
+      position: newIndex // optional kalau backend support
+    })
+  } catch {
+    fetchBoard()
   }
+}
 
   const handleAddCard = async (listId: string, title: string) => {
     try {
@@ -796,9 +846,10 @@ export default function BoardDetailPage() {
         <div className="flex-1 overflow-x-auto p-6">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={closestCorners }
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}   // 🔥 tambah
           >
             <div className="flex gap-4 items-start min-w-max">
               {board.lists.map(list => (
@@ -812,6 +863,7 @@ export default function BoardDetailPage() {
                     onCardClick={setSelectedCard}
                     onAddCard={handleAddCard}
                     onDeleteCard={handleDeleteCard}
+                     overId={overId}  
                   />
                 </SortableContext>
               ))}
