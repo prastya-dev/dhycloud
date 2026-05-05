@@ -3,40 +3,60 @@ version: "3.9"
 services:
   postgres:
     image: postgres:15
-    container_name: my_postgres
+    container_name: dhycloud_postgres
     restart: always
     environment:
-      POSTGRES_USER: dhycloudservers
-      POSTGRES_PASSWORD: dhycloudsapiayam
-      POSTGRES_DB: dhycloud
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
-    build: ./api
-    container_name: my_api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: dhycloud_api
     restart: always
     ports:
-      - "5000:5000"
+      - "2000:2000"
     environment:
-      DB_HOST: postgres
-      DB_USER: dhycloudservers
-      DB_PASSWORD: dhycloudsapiayam
-      DB_NAME: mydb
+      PORT: 2000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   frontend:
-    build: ./frontend
-    container_name: my_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXTAUTH_URL: ${NEXTAUTH_URL}
+        NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+        GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+    container_name: dhycloud_frontend
     restart: always
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://api:5000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     depends_on:
       - api
 
